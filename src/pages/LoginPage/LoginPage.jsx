@@ -1,15 +1,18 @@
 import React, { useState } from "react";
 import { login } from "../../services/login-service"; // Import hàm login
 import { useNavigate } from "react-router-dom"; // Import useNavigate hook
+import ErrorModal from "../../components/ErrorModal/ErrorModal";
+import { toast } from "react-toastify";
 
 function LoginPage() {
+  const [error, setError] = useState({ open: false, message: "" });
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [formData, setFormData] = useState({
     userNameOrEmail: "",
     password: "",
   });
-  
+
   const navigate = useNavigate(); // Initialize the navigate hook
 
   const togglePasswordVisibility = () => {
@@ -31,19 +34,28 @@ function LoginPage() {
 
     try {
       const result = await login(data);
-      console.log("Đăng nhập thành công", result);
 
-      // Lưu accessToken vào localStorage
-      if (result && result.token) {
-        localStorage.setItem("token", result.token);
+      // Kiểm tra nếu thành công
+      if (result && result.success) {
+        console.log("Đăng nhập thành công");
+
+        // Lưu accessToken vào localStorage
+        if (result.token) {
+          localStorage.setItem("token", result.token);
+        }
+
+        // Chuyển hướng đến trang chủ
+        navigate("/");
+      } else {
+        // Cập nhật lỗi để mở modal
+        setError({
+          open: true,
+          message: result?.message || "Đăng nhập thất bại, vui lòng thử lại.",
+        });
       }
-
-      // Chuyển hướng đến trang chủ
-      navigate("/");
-
     } catch (error) {
-      console.error("Lỗi đăng nhập", error);
-      // Xử lý lỗi đăng nhập
+      console.error("Lỗi đăng nhập:", error);
+      alert("Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại sau.");
     }
   };
 
@@ -116,6 +128,14 @@ function LoginPage() {
               Đăng nhập
             </button>
           </form>
+
+          {/* Error Modal */}
+          <ErrorModal
+            open={error.open}
+            onClose={() => setError({ ...error, open: false })}
+            title="Đăng nhập thất bại"
+            message={error.message}
+          />
           <div className="text-center mt-3">
             <p>
               Bạn chưa có tài khoản? <a href="/register">Tạo tài khoản</a>
